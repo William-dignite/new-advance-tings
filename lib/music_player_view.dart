@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:arc_progress_bar_new/arc_progress_bar_new.dart';
 import 'package:flutter/material.dart';
@@ -148,192 +150,144 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // StreamBuilder(
-                                //     stream: controller.player.sequenceStateStream,
-                                //     builder: (context, snapshots) {
-                                //       final state = snapshots.data;
-                                //       if (state?.sequence.isEmpty ?? false) {
-                                //         const Center(child: CircularProgressIndicator());
-                                //       }
-                                //       final MediaItem? metaData =
-                                //           state?.currentSource?.tag as MediaItem?;
-                                //       if (metaData != null) {
-                                //         return MusicMetaDetaWidget(
-                                //           songTitle: metaData.title.toString(),
-                                //           songImage: metaData.artUri.toString(),
-                                //           artistName: metaData.artist.toString(),
-                                //           songDesc: metaData.displayDescription.toString(),
-                                //         );
-                                //       } else {
-                                //         return const Center(
-                                //             child: CircularProgressIndicator());
-                                //       }
-                                //     }),
+                                StreamBuilder(
+                                    stream: controller.positionDataStream,
+                                    builder: (context, snapshot) {
+                                      final positionData = snapshot.data;
 
-                                // const Spacer(),
-                                Transform(
-                                  transform: Matrix4.identity()
-                                    ..scale(-1.0, 1.0), // Flips horizontally
-                                  alignment: Alignment.center,
-                                  child: StreamBuilder(
-                                      stream: controller.positionDataStream,
-                                      builder: (context, snapshot) {
-                                        final positionData = snapshot.data;
+                                      // Calculate percentage from 0 to 100
+                                      final percentage = (positionData?.duration
+                                                      .inMilliseconds ??
+                                                  0.0) >
+                                              0
+                                          ? ((positionData?.position
+                                                          .inMilliseconds ??
+                                                      0.0) /
+                                                  (positionData?.duration
+                                                          .inMilliseconds ??
+                                                      0.0) *
+                                                  100)
+                                              .clamp(0.0, 100.0)
+                                          : 0.0; // Default to 0 if no duration
 
-                                        return Transform(
-                                          alignment: Alignment.center,
-                                          transform: Matrix4.identity()
-                                            ..rotateZ(3.14),
-                                          child: GestureDetector(
-                                            onPanUpdate: (details) {
-                                              // Get the size of the progress bar area (assuming 300 as width)
-                                              double newPercent =
-                                                  (details.localPosition.dx /
-                                                          300)
+                                      return ColoredBox(
+                                        color: Colors.black,
+                                        child: ArcProgressBar(
+                                            strokeCap: StrokeCap.round,
+                                            arcThickness: 3,
+                                            animationCurve: Curves.bounceIn,
+                                            innerPadding:
+                                                MediaQuery.sizeOf(context)
+                                                        .width *
+                                                    0.03,
+                                            animateFromLastPercent: false,
+                                            animationDuration: Duration.zero,
+                                            handleSize: 30,
+                                            percentage: percentage,
+                                            handleWidget: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  border: Border.all(
+                                                    color:
+                                                        const Color(0XFFD9D9D9),
+                                                    width: 1,
+                                                  )),
+                                              child: GestureDetector(
+                                                onPanUpdate: (details) {
+                                                  // Center point calculation
+                                                  log("----details----$details-------");
+                                                  final width =
+                                                      context.size!.width;
+
+                                                  // Calculate the new position as a ratio of the drag distance to the width
+                                                  final newRatio = (details
+                                                              .localPosition
+                                                              .dx /
+                                                          width)
                                                       .clamp(0.0, 1.0);
 
-                                              // Calculate the new duration based on the percent
-                                              final newDuration = Duration(
-                                                milliseconds: ((positionData
-                                                                ?.duration
-                                                                .inMilliseconds ??
-                                                            0) *
-                                                        newPercent)
-                                                    .toInt(),
-                                              );
+                                                  // Calculate the new position in milliseconds
+                                                  final newPositionMilliseconds =
+                                                      (newRatio *
+                                                              positionData!
+                                                                  .duration
+                                                                  .inMilliseconds)
+                                                          .round();
+                                                  final newPosition = Duration(
+                                                      milliseconds:
+                                                          newPositionMilliseconds);
 
-                                              controller.player
-                                                  .seek(newDuration);
-                                            },
-                                            child: ArcProgressBar(
-                                                strokeCap: StrokeCap.round,
-                                                arcThickness:
-                                                    3, // barHeight equivalent
-                                                animationCurve: Curves.bounceIn,
-                                                innerPadding: 20,
-                                                animateFromLastPercent: true,
-                                                handleSize:
-                                                    30, // thumbRadius equivalent
-
-                                                handleWidget: DecoratedBox(
-                                                  decoration: BoxDecoration(
-                                                      shape: BoxShape.circle,
-                                                      border: Border.all(
-                                                        color: const Color(
-                                                            0XFFD9D9D9),
-                                                        width: 1,
-                                                      )),
-                                                  child: Container(
-                                                    // child: ,
-                                                    margin:
-                                                        const EdgeInsets.all(4),
-                                                    // height: 16,
-                                                    // width: 16,
-                                                    decoration:
-                                                        const BoxDecoration(
-                                                            shape:
-                                                                BoxShape.circle,
-                                                            gradient:
-                                                                LinearGradient(
-                                                              colors: [
-                                                                Color(
-                                                                    0xff8180C2),
-                                                                Color(
-                                                                    0xff000086),
-                                                              ],
-                                                            )),
-                                                  ),
+                                                  controller.player
+                                                      .seek(newPosition);
+                                                },
+                                                child: Container(
+                                                  margin:
+                                                      const EdgeInsets.all(4),
+                                                  decoration:
+                                                      const BoxDecoration(
+                                                          shape:
+                                                              BoxShape.circle,
+                                                          gradient:
+                                                              LinearGradient(
+                                                            colors: [
+                                                              Color(0xff8180C2),
+                                                              Color(0xff000086),
+                                                            ],
+                                                          )),
                                                 ),
-                                                centerWidget: Transform(
-                                                  transform: Matrix4.identity()
-                                                    ..rotateZ(3.14),
-                                                  alignment: Alignment.center,
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            bottom: 25),
-                                                    child: ColoredBox(
-                                                      color: Colors.transparent,
-                                                      child: Image.asset(
-                                                        "assets/images/flower.png",
-                                                        fit: BoxFit.fill,
-                                                        width: double.infinity,
-                                                        color: Colors.white,
-                                                        // .withOpacity(0.100),
-                                                        height:
-                                                            MediaQuery.sizeOf(
-                                                                    context)
-                                                                .height,
-                                                      )
-                                                          // const FlowerShapeWithBlur()
-                                                          .paddingSymmetric(
-                                                              horizontal: 25),
-                                                    ),
+                                              ),
+                                            ),
+                                            centerWidget: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 25),
+                                              child: ColoredBox(
+                                                color: Colors.transparent,
+                                                child: Image.asset(
+                                                  "assets/images/flower.png",
+                                                  fit: BoxFit.fill,
+                                                  width: double.infinity,
+                                                  color: Colors.white,
+                                                  // .withOpacity(0.100),
+                                                  height:
+                                                      MediaQuery.sizeOf(context)
+                                                          .height,
+                                                )
+                                                    // const FlowerShapeWithBlur()
+                                                    .paddingSymmetric(
+                                                        horizontal: 25),
+                                              ),
+                                            ),
+                                            backgroundColor:
+                                                const Color(0xffFFFFFF)
+                                                    .withOpacity(0.28),
+                                            foregroundColor:
+                                                const Color(0xff000086),
+                                            bottomRightWidget: Text(
+                                              positionData != null
+                                                  ? getTimeString(
+                                                      positionData.position)
+                                                  : "",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Colors.white,
                                                   ),
-                                                ),
-                                                backgroundColor:
-                                                    const Color(0xffFFFFFF)
-                                                        .withOpacity(0.28),
-                                                foregroundColor:
-                                                    const Color(0xff000086),
-                                                percentage: (positionData
-                                                            ?.position
-                                                            .inMilliseconds ??
-                                                        0) /
-                                                    (positionData?.duration
-                                                            .inMilliseconds ??
-                                                        1) *
-                                                    100,
-                                                bottomRightWidget:
-                                                    Transform.rotate(
-                                                  angle: 180 *
-                                                      3.141592653589793238 /
-                                                      180,
-                                                  child: Transform.flip(
-                                                    flipX: true,
-                                                    child: Text(
-                                                      positionData != null
-                                                          ? getTimeString(
-                                                              positionData
-                                                                  .position)
-                                                          : "",
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                            color: Colors.white,
-                                                          ),
-                                                    ).paddingOnly(right: 30),
+                                            ).paddingOnly(right: 30),
+                                            bottomLeftWidget: Text(
+                                              positionData != null
+                                                  ? getTimeString(
+                                                      positionData.duration)
+                                                  : "",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Colors.white,
                                                   ),
-                                                ),
-                                                bottomLeftWidget:
-                                                    Transform.rotate(
-                                                        angle: 180 *
-                                                            3.141592653589793238 /
-                                                            180,
-                                                        child: Transform.flip(
-                                                          flipX: true,
-                                                          child: Text(
-                                                            positionData != null
-                                                                ? getTimeString(
-                                                                    positionData
-                                                                        .duration)
-                                                                : "",
-                                                            style: Theme.of(
-                                                                    context)
-                                                                .textTheme
-                                                                .bodySmall
-                                                                ?.copyWith(
-                                                                  color: Colors
-                                                                      .white,
-                                                                ),
-                                                          ).paddingOnly(
-                                                              left: 30),
-                                                        ))),
-                                          ),
-                                        );
-                                      }),
-                                ),
+                                            ).paddingOnly(left: 30)),
+                                      );
+                                    }),
                                 const Text(
                                   "Anxiety Release",
                                   style: TextStyle(
@@ -342,7 +296,6 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
                                     color: Colors.white,
                                   ),
                                 ),
-
                                 Container(
                                   margin: const EdgeInsets.only(top: 12),
                                   padding: const EdgeInsets.symmetric(
@@ -439,99 +392,3 @@ class _MusicPlayerViewState extends State<MusicPlayerView> {
         });
   }
 }
-/*
-class InteractiveCurvedProgressBar extends StatefulWidget {
-  final Duration progress;
-  final Duration buffered;
-  final Duration total;
-  final Function(Duration) onSeek;
-
-  InteractiveCurvedProgressBar({
-    required this.progress,
-    required this.buffered,
-    required this.total,
-    required this.onSeek,
-  });
-
-  @override
-  _InteractiveCurvedProgressBarState createState() =>
-      _InteractiveCurvedProgressBarState();
-}
-
-class _InteractiveCurvedProgressBarState
-    extends State<InteractiveCurvedProgressBar> {
-  double _currentProgress = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentProgress = widget.progress.inSeconds / widget.total.inSeconds;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onPanUpdate: (details) {
-        setState(() {
-          _currentProgress +=
-              details.delta.dx / 300; // Adjust for your arc size
-          _currentProgress = _currentProgress.clamp(0.0, 1.0); // Clamp to 0 - 1
-
-          // Convert the progress back to a Duration and seek
-          final newDuration = widget.total * _currentProgress;
-          widget.onSeek(newDuration);
-        });
-      },
-      child: CustomPaint(
-        size: Size(300, 150),
-        painter: CurvedProgressPainter(_currentProgress),
-      ),
-    );
-  }
-}
-
-class CurvedProgressPainter extends CustomPainter {
-  final double progress;
-
-  CurvedProgressPainter(this.progress);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint baseBarPaint = Paint()
-      ..color = Colors.grey[300]!
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8.0;
-
-    Paint progressBarPaint = Paint()
-      ..color = Colors.blue
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8.0
-      ..strokeCap = StrokeCap.round;
-
-    // Draw the background arc (base bar)
-    canvas.drawArc(
-      Rect.fromCircle(
-          center: Offset(size.width / 2, size.height / 2), radius: 100),
-      3.14, // Starting angle
-      3.14, // Sweep angle (180 degrees)
-      false,
-      baseBarPaint,
-    );
-
-    // Draw the progress arc
-    canvas.drawArc(
-      Rect.fromCircle(
-          center: Offset(size.width / 2, size.height / 2), radius: 100),
-      3.14, // Starting angle
-      3.14 * progress, // Sweep angle proportional to progress
-      false,
-      progressBarPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CurvedProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress;
-  }
-}
-*/
